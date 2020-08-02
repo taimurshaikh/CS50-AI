@@ -120,16 +120,20 @@ def shortest_path(source, target):
 
         # If this node's state (person) is the goal person, then solution is found
         if node.state == target:
-                solution = []
+                actions = []
+                cells = []
 
                 # While we haven't reached the start node
                 while node.parent != None:
-                    solution.append((node.action, node.state))
+                    actions.append(node.action)
+                    cells.append(node.state)
                     # Setting next node to follow as this node's parent
                     node = node.parent
+                actions.reverse()
+                cells.reverse()
 
-                solution.reverse()
-
+                # Constructing path with list comprehension
+                solution = [(actions[x], cells[x]) for x in range(len(actions))]
                 return solution
 
 def person_id_for_name(name):
