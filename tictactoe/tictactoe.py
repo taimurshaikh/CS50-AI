@@ -9,11 +9,6 @@ X = "X"
 O = "O"
 EMPTY = None
 
-turn = 0
-won = False
-X_won = False
-O_won = False
-
 def initial_state():
     """
     Returns starting state of the board.
@@ -27,7 +22,7 @@ def player(board):
     """
     Returns player who has the next turn on a board.
     """
-    numX, numO = 0, 0
+    numX = numO = 0
     for row in board:
         for cell in row:
             if cell == X:
@@ -39,8 +34,6 @@ def player(board):
         return O
     elif not terminal(board) and numX == numO:
         return X
-    else:
-        return None
 
 
 def actions(board):
@@ -61,6 +54,8 @@ def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
+    global turn
+
     # Raises exception if action is invalid
     if terminal(board) or action not in actions(board):
         raise Exception
@@ -115,6 +110,7 @@ def winner(board):
                         return X
                     else:
                         return O
+
             # If we are in the first row and third column (at top right)
             if i == 0 and j == 2:
                 if cell != EMPTY and cell == board[i+1][j-1] and cell == board[i+2][j-2]:
@@ -131,7 +127,7 @@ def terminal(board):
     Returns True if game is over, False otherwise.
     """
     # If the game is won, then it is definitely over
-    if winner(board) != None:
+    if winner(board) != None or not actions(board):
         return True
 
     # Else, if there are still empty cells on the board, then the game is not over
@@ -154,72 +150,53 @@ def utility(board):
     else:
         return 0
 
-
-def max_value(state):
-    """
-    Returns the action to perform on this state in order to maximize value
-    """
-
-    if terminal(state):
-        return utility(state)
-
-    v = -math.inf
-
-    # Iterates through all possible actions taken from this state
-    for action in actions(state):
-        v = max(v, min_value(result(state, action)))
-
-    return v
-
-
-def min_value(state):
-    """
-    Returns the action to perform on this state in order to minimize value
-    """
-
-    if terminal(state):
-        return utility(state)
-
-    v = math.inf
-
-    # Iterates through all possible actions taken from this state
-    for action in actions(state):
-        v = min(v, max_value(result(state, action)))
-
-    return v
-
-
 def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
+    if terminal(board):
+        return None
 
-    whose_turn = player(board)
+    if board == initial_state():
+        return (1,1)
 
-    # Maximizing player
-    if whose_turn == X:
+    current_player = player(board)
+    bestVal = -math.inf if current_player == X else math.inf
 
-        maxVal = -math.inf
-        maxAction = None
-        newVal = maxVal
+    for action in actions(board):
+        newVal = calculate_value(result(board, action), bestVal)
 
-        for action in actions(board):
-            newVal = max_value(result(board, action))
-            if newVal > maxVal:
-                maxVal = newVal
-                maxAction = action
-        return maxAction
+        if current_player == X:
+            newVal = max(bestVal, newVal)
 
-    # Minimizing player
-    elif whose_turn == O:
+        if current_player == O:
+            newVal = min(bestVal, newVal)
 
-        minVal = math.inf
-        minAction = None
-        newVal = minVal
+        if newVal != bestVal:
+            bestVal = newVal
+            best_action = action
 
-        for action in actions(board):
-            newVal = min_value(result(board, action))
-            if newVal < minVal:
-                minVal = newVal
-                minAction = action
-        return minAction
+    return best_action
+
+def calculate_value(board, best_value):
+
+    if terminal(board):
+        return utility(board)
+
+    current_player = player(board)
+    value = -math.inf if current_player == X else math.inf
+
+    for action in actions(board):
+        newVal = calculate_value(result(board, action), value)
+
+        if current_player == X:
+            if newVal > best_value:
+                return newVal
+            value = max(value, newVal)
+
+        if current_player == O:
+            if newVal < best_value:
+                return newVal
+            value = min(value, newVal)
+
+    return value
